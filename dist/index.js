@@ -29898,7 +29898,10 @@ async function run() {
             ref: github_1.context.sha
         });
         const labels = parseLabelConfig(core.getInput('labels'));
-        const tags = await octo.paginate(octo.rest.repos.listTags, { ...github_1.context.repo })
+        const tags = await octo.paginate(octo.rest.repos.listTags, {
+            ...github_1.context.repo,
+            per_page: 100
+        })
             .then(response => {
             const map = new Map();
             response.forEach(tag => map.set(tag.commit.sha, tag.name));

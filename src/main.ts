@@ -12,7 +12,10 @@ export async function run(): Promise<void> {
 
         const labels = parseLabelConfig(core.getInput('labels'))
 
-        const tags = await octo.paginate(octo.rest.repos.listTags, {...context.repo})
+        const tags = await octo.paginate(octo.rest.repos.listTags, {
+            ...context.repo,
+            per_page: 100
+        })
             .then(response => {
                 const map = new Map<string, string>()
                 response.forEach(tag => map.set(tag.commit.sha, tag.name));
