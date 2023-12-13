@@ -29897,6 +29897,7 @@ async function run() {
             ...github_1.context.repo,
             ref: github_1.context.sha
         });
+        const labels = parseLabelConfig(core.getInput('labels'));
         const tags = await octo.paginate(octo.rest.repos.listTags, { ...github_1.context.repo })
             .then(response => {
             const map = new Map();
@@ -29905,6 +29906,7 @@ async function run() {
         });
         let offset = 0;
         let tag;
+        let foundClean = false;
         outer: for await (const response of octo.paginate.iterator(octo.rest.repos.listCommits, {
             ...github_1.context.repo,
             until: lastCommit.data.commit.committer.date,
@@ -29913,12 +29915,21 @@ async function run() {
             for (const cmt of response.data) {
                 tag = tags.get(cmt.sha);
                 if (tag != null) {
-                    break outer;
+                    // If we have a label config, we expect a clean one to exist first
+                    // And since we don't want to end with it, we will try to find a non-clean tag
+                    if (!(labels && tag.endsWith(labels.cleanMarker))) {
+                        foundClean = labels !== undefined && tag.endsWith(labels.cleanMarker);
+                        break outer;
+                    }
                 }
                 offset++;
             }
         }
-        const version = tag == null ? "1.0." + offset : computeVersion(tag, offset);
+        let version = tag == null ? "1.0." + offset : computeVersion(tag, offset);
+        // We have a label configuration but we haven't found the clean tag, so append the suffix
+        if (labels && !foundClean) {
+            version += labels.label;
+        }
         core.setOutput("version", version);
         console.log(`Computed version is: ${version}`);
     }
@@ -29948,6 +29959,16 @@ function computeVersion(tag, offset) {
         parts[parts.length - 1] += offset;
     }
     return parts.join(".") + toAppend;
+}
+function parseLabelConfig(config) {
+    if (config) {
+        const split = config.split(',');
+        return {
+            label: split[0].trim(),
+            cleanMarker: split[1].trim()
+        };
+    }
+    return undefined;
 }
 
 

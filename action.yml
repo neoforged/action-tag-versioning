@@ -1,6 +1,11 @@
 name: 'versioning'
 description: 'Tag-based versioning inside an action'
 
+inputs:
+  labels:
+    required: false
+    description: 'Comma separated label configuration. The first part is a suffix to append to all versions. The second part is an indicator that drops the suffix when found in a tag, a "clean marker"'
+
 outputs:
   version:
     description: 'The computed version'
