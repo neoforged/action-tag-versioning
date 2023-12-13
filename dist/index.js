@@ -29917,8 +29917,11 @@ async function run() {
                 if (tag != null) {
                     // If we have a label config, we expect a clean one to exist first
                     // And since we don't want to end with it, we will try to find a non-clean tag
-                    if (!(labels && tag.endsWith(labels.cleanMarker))) {
-                        foundClean = labels !== undefined && tag.endsWith(labels.cleanMarker);
+                    if (!foundClean && labels !== undefined && tag.endsWith(labels.cleanMarker)) {
+                        foundClean = true;
+                        console.log(`Found clean tag: ${tag}`);
+                    }
+                    else {
                         break outer;
                     }
                 }
