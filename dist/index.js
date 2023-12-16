@@ -29912,6 +29912,7 @@ async function run() {
         let foundClean = false;
         outer: for await (const response of octo.paginate.iterator(octo.rest.repos.listCommits, {
             ...github_1.context.repo,
+            sha: github_1.context.ref.replace('refs/heads/', ''),
             until: lastCommit.data.commit.committer.date,
             per_page: 100
         })) {

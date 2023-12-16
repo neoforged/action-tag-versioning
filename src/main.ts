@@ -31,6 +31,7 @@ export async function run(): Promise<void> {
             octo.rest.repos.listCommits,
             {
                 ...context.repo,
+                sha: context.ref.replace('refs/heads/', ''),
                 until: lastCommit.data.commit.committer!.date,
                 per_page: 100
             },
