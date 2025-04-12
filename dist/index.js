@@ -29957,13 +29957,18 @@ function computeVersion(tag, offset) {
         tag = split[0];
         console.log(`Found classifier to append: ${split[1]}`);
     }
-    const parts = tag.split(".").map(e => parseInt(e));
+    const parts = tag.split("."); // Get parts of the tag so we can verify it fits the correct format.
+    for (const part in parts) { // Verify that all parts of the tag pass verification, just for internal consistency
+        // Regex: One integer, then zero or more of any other character.
+        if (!(/^\d.*$/.test(part))) // JPMS requires that versions begin with a number.
+            console.log(`Invalid tag component: ${part} must begin with a numeric digit.`);
+    }
     console.log(`Found version parts: ${parts.join(", ")}`);
     if (parts.length < 3) {
-        parts.push(offset);
+        parts.push(offset.toString());
     }
     else {
-        parts[parts.length - 1] += offset;
+        parts[parts.length - 1] = (parseInt(parts[parts.length - 1]) + offset).toString();
     }
     return parts.join(".") + toAppend;
 }
