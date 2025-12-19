@@ -29892,13 +29892,23 @@ const core = __importStar(__nccwpck_require__(2186));
 const github_1 = __nccwpck_require__(5438);
 async function run() {
     try {
+        // We can skip all of this if we're running directly on a git tag
+        // prefixed with release/
+        if (github_1.context.eventName === 'push' &&
+            github_1.context.ref.startsWith('refs/tags/release/')) {
+            const version = github_1.context.ref.substring('refs/tags/release/'.length);
+            core.setOutput('version', version);
+            console.log(`Computed version from release tag: ${version}`);
+            return;
+        }
         const octo = (0, github_1.getOctokit)(process.env['GITHUB_TOKEN']);
         const lastCommit = await octo.rest.repos.getCommit({
             ...github_1.context.repo,
             ref: github_1.context.sha
         });
         const labels = parseLabelConfig(core.getInput('labels'));
-        const tags = await octo.paginate(octo.rest.repos.listTags, {
+        const tags = await octo
+            .paginate(octo.rest.repos.listTags, {
             ...github_1.context.repo,
             per_page: 100
         })
@@ -29921,7 +29931,9 @@ async function run() {
                 if (tag != null) {
                     // If we have a label config, we expect a clean one to exist first
                     // And since we don't want to end with it, we will try to find a non-clean tag
-                    if (!foundClean && labels !== undefined && tag.endsWith(labels.cleanMarker)) {
+                    if (!foundClean &&
+                        labels !== undefined &&
+                        tag.endsWith(labels.cleanMarker)) {
                         foundClean = true;
                         console.log(`Found clean tag: ${tag}`);
                     }
@@ -29932,12 +29944,12 @@ async function run() {
                 offset++;
             }
         }
-        let version = tag == null ? "1.0." + offset : computeVersion(tag, offset);
+        let version = tag == null ? '1.0.' + offset : computeVersion(tag, offset);
         // We have a label configuration but we haven't found the clean tag, so append the suffix
         if (labels && !foundClean) {
             version += labels.label;
         }
-        core.setOutput("version", version);
+        core.setOutput('version', version);
         console.log(`Computed version is: ${version}`);
     }
     catch (error) {
@@ -29948,29 +29960,31 @@ async function run() {
 }
 exports.run = run;
 function computeVersion(tag, offset) {
-    if (tag.startsWith("v"))
+    if (tag.startsWith('v'))
         tag = tag.substring(1); // If the tag starts with v, take it away
-    let toAppend = "";
-    if (tag.indexOf("-") != -1) {
-        const split = tag.split("-", 2);
-        toAppend = "-" + split[1];
+    let toAppend = '';
+    if (tag.indexOf('-') != -1) {
+        const split = tag.split('-', 2);
+        toAppend = '-' + split[1];
         tag = split[0];
         console.log(`Found classifier to append: ${split[1]}`);
     }
-    const parts = tag.split("."); // Get parts of the tag so we can verify it fits the correct format.
-    for (const part in parts) { // Verify that all parts of the tag pass verification, just for internal consistency
+    const parts = tag.split('.'); // Get parts of the tag so we can verify it fits the correct format.
+    for (const part in parts) {
+        // Verify that all parts of the tag pass verification, just for internal consistency
         // Regex: One integer, then zero or more of any other character.
-        if (!(/^\d.*$/.test(part))) // JPMS requires that versions begin with a number.
+        if (!/^\d.*$/.test(part))
+            // JPMS requires that versions begin with a number.
             console.log(`Invalid tag component: ${part} must begin with a numeric digit.`);
     }
-    console.log(`Found version parts: ${parts.join(", ")}`);
+    console.log(`Found version parts: ${parts.join(', ')}`);
     if (parts.length < 3) {
         parts.push(offset.toString());
     }
     else {
         parts[parts.length - 1] = (parseInt(parts[parts.length - 1]) + offset).toString();
     }
-    return parts.join(".") + toAppend;
+    return parts.join('.') + toAppend;
 }
 function parseLabelConfig(config) {
     if (config) {
