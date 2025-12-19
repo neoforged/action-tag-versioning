@@ -29905,9 +29905,28 @@ async function run() {
         })
             .then(response => {
             const map = new Map();
-            response.forEach(tag => map.set(tag.commit.sha, tag.name));
+            for (const { commit: { sha }, name } of response) {
+                const names = map.get(sha);
+                if (!names) {
+                    map.set(sha, [name]);
+                }
+                else {
+                    names.push(name);
+                }
+            }
             return map;
         });
+        // We can skip all of this if we're running directly on a git tag
+        // prefixed with release/
+        const releaseTag = tags
+            .get(github_1.context.sha)
+            ?.find(name => name.startsWith('release/'));
+        if (releaseTag) {
+            const version = releaseTag.substring('release/'.length);
+            core.setOutput('version', version);
+            console.log(`Computed version from release tag: ${version}`);
+            return;
+        }
         let offset = 0;
         let tag;
         let foundClean = false;
@@ -29918,8 +29937,7 @@ async function run() {
             per_page: 100
         })) {
             for (const cmt of response.data) {
-                tag = tags.get(cmt.sha);
-                if (tag != null) {
+                for (tag of tags.get(cmt.sha) ?? []) {
                     // If we have a label config, we expect a clean one to exist first
                     // And since we don't want to end with it, we will try to find a non-clean tag
                     if (!foundClean &&
