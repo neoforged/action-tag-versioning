@@ -4,18 +4,6 @@ import { GitHub } from '@actions/github/lib/utils'
 
 export async function run(): Promise<void> {
   try {
-    // We can skip all of this if we're running directly on a git tag
-    // prefixed with release/
-    if (
-      context.eventName === 'push' &&
-      context.ref.startsWith('refs/tags/release/')
-    ) {
-      const version = context.ref.substring('refs/tags/release/'.length)
-      core.setOutput('version', version)
-      console.log(`Computed version from release tag: ${version}`)
-      return
-    }
-
     const octo: InstanceType<typeof GitHub> = getOctokit(
       process.env['GITHUB_TOKEN']!!
     )
@@ -32,10 +20,32 @@ export async function run(): Promise<void> {
         per_page: 100
       })
       .then(response => {
-        const map = new Map<string, string>()
-        response.forEach(tag => map.set(tag.commit.sha, tag.name))
+        const map = new Map<string, string[]>()
+        for (const {
+          commit: { sha },
+          name
+        } of response) {
+          const names = map.get(sha)
+          if (!names) {
+            map.set(sha, [name])
+          } else {
+            names.push(name)
+          }
+        }
         return map
       })
+
+    // We can skip all of this if we're running directly on a git tag
+    // prefixed with release/
+    const releaseTag = tags
+      .get(context.sha)
+      ?.find(name => name.startsWith('release/'))
+    if (releaseTag) {
+      const version = releaseTag.substring('release/'.length)
+      core.setOutput('version', version)
+      console.log(`Computed version from release tag: ${version}`)
+      return
+    }
 
     let offset = 0
     let tag: string | undefined
@@ -51,8 +61,7 @@ export async function run(): Promise<void> {
       }
     )) {
       for (const cmt of response.data) {
-        tag = tags.get(cmt.sha)
-        if (tag != null) {
+        for (tag of tags.get(cmt.sha) ?? []) {
           // If we have a label config, we expect a clean one to exist first
           // And since we don't want to end with it, we will try to find a non-clean tag
           if (
