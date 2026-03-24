@@ -8,7 +8,7 @@ inputs:
   increment_last_component:
     required: false
     default: true
-    description: 'Controls how the offset (number of commits compared to the last tag) is applied. When false, it is added as an additional component. When true, it is added to the last existing component.'
+    description: 'Controls how the offset (number of commits compared to the last tag) is applied. When true and there are at least 3 version components, it is added to the last existing component. When false, it is always added as an additional version component.'
 
 outputs:
   version:
