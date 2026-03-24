@@ -29898,6 +29898,7 @@ async function run() {
             ref: github_1.context.sha
         });
         const labels = parseLabelConfig(core.getInput('labels'));
+        const incrementLastComponent = core.getBooleanInput('increment_last_component');
         const tags = await octo
             .paginate(octo.rest.repos.listTags, {
             ...github_1.context.repo,
@@ -29953,7 +29954,9 @@ async function run() {
                 offset++;
             }
         }
-        let version = tag == null ? '1.0.' + offset : computeVersion(tag, offset);
+        let version = tag == null
+            ? '1.0.' + offset
+            : computeVersion(tag, offset, incrementLastComponent);
         // We have a label configuration but we haven't found the clean tag, so append the suffix
         if (labels && !foundClean) {
             version += labels.label;
@@ -29968,7 +29971,7 @@ async function run() {
     }
 }
 exports.run = run;
-function computeVersion(tag, offset) {
+function computeVersion(tag, offset, incrementLastComponent) {
     if (tag.startsWith('v'))
         tag = tag.substring(1); // If the tag starts with v, take it away
     let toAppend = '';
@@ -29987,11 +29990,11 @@ function computeVersion(tag, offset) {
             console.log(`Invalid tag component: ${part} must begin with a numeric digit.`);
     }
     console.log(`Found version parts: ${parts.join(', ')}`);
-    if (parts.length < 3) {
-        parts.push(offset.toString());
+    if (incrementLastComponent && parts.length >= 3) {
+        parts[parts.length - 1] = (parseInt(parts[parts.length - 1]) + offset).toString();
     }
     else {
-        parts[parts.length - 1] = (parseInt(parts[parts.length - 1]) + offset).toString();
+        parts.push(offset.toString());
     }
     return parts.join('.') + toAppend;
 }

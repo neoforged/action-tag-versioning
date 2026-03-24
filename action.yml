@@ -5,6 +5,10 @@ inputs:
   labels:
     required: false
     description: 'Comma separated label configuration. The first part is a suffix to append to all versions. The second part is an indicator that drops the suffix when found in a tag, a "clean marker"'
+  increment_last_component:
+    required: false
+    default: true
+    description: 'Controls how the offset (number of commits compared to the last tag) is applied. When true and there are at least 3 version components, it is added to the last existing component. When false, it is always added as an additional version component.'
 
 outputs:
   version:
