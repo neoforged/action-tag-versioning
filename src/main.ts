@@ -13,7 +13,7 @@ export async function run(): Promise<void> {
     })
 
     const labels = parseLabelConfig(core.getInput('labels'))
-    const incrementLastComponent = core.getInput('increment_last_component')
+    const incrementLastComponent = core.getBooleanInput('increment_last_component')
 
     const tags = await octo
       .paginate(octo.rest.repos.listTags, {
@@ -120,7 +120,7 @@ function computeVersion(tag: string, offset: number, incrementLastComponent: boo
   }
 
   console.log(`Found version parts: ${parts.join(', ')}`)
-  if (incrementLastComponent) {
+  if (incrementLastComponent && parts.length >= 3) {
     parts[parts.length - 1] = (
       parseInt(parts[parts.length - 1]) + offset
     ).toString()
