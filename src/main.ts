@@ -13,6 +13,7 @@ export async function run(): Promise<void> {
     })
 
     const labels = parseLabelConfig(core.getInput('labels'))
+    const incrementLastComponent = core.getInput('increment_last_component')
 
     const tags = await octo
       .paginate(octo.rest.repos.listTags, {
@@ -79,7 +80,7 @@ export async function run(): Promise<void> {
       }
     }
 
-    let version = tag == null ? '1.0.' + offset : computeVersion(tag, offset)
+    let version = tag == null ? '1.0.' + offset : computeVersion(tag, offset, incrementLastComponent)
 
     // We have a label configuration but we haven't found the clean tag, so append the suffix
     if (labels && !foundClean) {
@@ -95,7 +96,7 @@ export async function run(): Promise<void> {
   }
 }
 
-function computeVersion(tag: string, offset: number): string {
+function computeVersion(tag: string, offset: number, incrementLastComponent: boolean): string {
   if (tag.startsWith('v')) tag = tag.substring(1) // If the tag starts with v, take it away
 
   let toAppend = ''
@@ -119,12 +120,12 @@ function computeVersion(tag: string, offset: number): string {
   }
 
   console.log(`Found version parts: ${parts.join(', ')}`)
-  if (parts.length < 3) {
-    parts.push(offset.toString())
-  } else {
+  if (incrementLastComponent) {
     parts[parts.length - 1] = (
       parseInt(parts[parts.length - 1]) + offset
     ).toString()
+  } else {
+    parts.push(offset.toString())
   }
 
   return parts.join('.') + toAppend
